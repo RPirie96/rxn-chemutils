@@ -28,13 +28,7 @@ def is_hypervalent(mol : Mol) -> bool:
     has_hypervalent = False
 
     for atom in mol.GetAtoms():
-        default = Chem.GetPeriodicTable().GetDefaultValence(atom.GetAtomicNum())
-
-        actual = 0
-        for bond in atom.GetBonds():
-            actual += bond.GetBondTypeAsDouble()
-
-        if actual > default:
+        if atom.HasValenceViolation():
             has_hypervalent = True
             return has_hypervalent
 
