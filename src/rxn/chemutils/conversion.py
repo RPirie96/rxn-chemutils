@@ -23,6 +23,22 @@ from .exceptions import InvalidInchi, InvalidMdl, InvalidSmiles, SanitizationErr
 
 RDLogger.logger().setLevel(RDLogger.CRITICAL)
 
+def is_hypervalent(mol : Mol) -> bool:
+
+    has_hypervalent = False
+
+    for atom in mol.GetAtoms():
+        default = Chem.GetPeriodicTable().GetDefaultValence(atom.GetAtomicNum())
+
+        actual = 0
+        for bond in atom.GetBonds():
+            actual += bond.GetBondTypeAsDouble()
+
+        if actual > default:
+            has_hypervalent = True
+            return has_hypervalent
+
+    return has_hypervalent
 
 def smiles_to_mol(
     smiles: str, sanitize: bool = True, find_radicals: bool = True
@@ -58,6 +74,8 @@ def smiles_to_mol(
     if not sanitize:
         if find_radicals:
             sanitizations = [Chem.SANITIZE_FINDRADICALS]
+        elif is_hypervalent(mol):
+            sanitizations = [Chem.SANITIZE_ALL^Chem.SANITIZE_PROPERTIES]
         else:
             sanitizations = [Chem.SANITIZE_NONE]
 
@@ -240,6 +258,8 @@ def canonicalize_smiles(smiles: str, check_valence: bool = True) -> str:
     # Sanitization as a separate step, to enable exclusion of valence check
     try:
         excluded_sanitizations = []
+        if is_hypervalent(mol):
+            check_valence = False
         if not check_valence:
             excluded_sanitizations.append(Chem.SANITIZE_PROPERTIES)
         sanitize_mol(mol, exclude_sanitizations=excluded_sanitizations)
